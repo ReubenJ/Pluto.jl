@@ -74,6 +74,18 @@ using Pluto.WorkspaceManager: poll
         """
         @info "" _id=StructThatErrorsOnPrinting()
         """, # 29
+        """
+        using StructArrays
+        """, # 30
+        "[Dict(1 => 2), Dict(3 => 4)]", # 31
+        "[Dict(1 => 2), Dict(3 => 4)] |> StructArray", #32
+        """
+        [Dict("a" => 2), Dict("b" => 4)]
+        """, # 33
+        """
+        StructArray((a = [rand(Bool, 3) for i = 1:3, j = 1:2], b = [rand(Bool) for i = 1:3, j = 1:2]))
+        """, # 34
+        "[1 2; 2 3; 3 4]", # 35
     ]))
 
     @testset "Stdout" begin
@@ -163,6 +175,20 @@ using Pluto.WorkspaceManager: poll
         # `display` should not display the middle element of the big array
         @test contains(msg_display, "1") && contains(msg_display, "500")
         @test !contains(msg_display, "250")
+    end
+
+    @testset "Over-eager Tables.jl output" begin
+        update_run!(🍭, notebook, notebook.cells[30:35])
+        
+        # tree output (like a Vector) expected
+        for cell in notebook.cells[31:33]
+            @test cell.output.mime == MIME("application/vnd.pluto.tree+object")
+        end
+
+        # text/plain Matrix output
+        for cell in notebook.cells[34:35]
+            @test cell.output.mime == MIME("text/plain")
+        end
     end
 
     @testset "Logging respects maxlog" begin
